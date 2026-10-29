@@ -1,0 +1,8 @@
+#!/bin/sh
+# Resolve the checkout without changing the caller's working directory.
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
+if [ ! -x "$project_dir/.venv/bin/python" ]; then
+    echo "HRL: Missing .venv/bin/python. Complete the README installation steps first." >&2
+    exit 1
+fi
+exec "$project_dir/.venv/bin/python" "$project_dir/scripts/demo.py" "$@"
