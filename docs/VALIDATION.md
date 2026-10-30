@@ -10,7 +10,7 @@ Private remote: https://git.soma.salesforce.com/chameleon/human-review-learning
   isolated environment. Replaced database operations with BucketClient uploads,
   downloads and bucket existence checks. SDK sources remain untouched. Obsolete DocStore distributions and
   google-cloud-firestore were uninstalled before the passing test run.
-- `.venv/bin/python -m pytest -q`: **138 passed** including separate SDK operations, native directory transfers and presenter controls.
+- `.venv/bin/python -m pytest -q`: **147 passed** including separate SDK operations, native directory transfers and presenter controls.
 - Tests include conservative classification, evidence validation, semantic merge
   orchestration, stable IDs, preservation, duplicate source prevention, pagination,
   old PRs with recent feedback, and the existing end-to-end controlled fixture.
@@ -201,3 +201,20 @@ Complete logs are local and ignored under
 output/demo--human-review-learning/preview/{single-upload,single-download,directory-upload,directory-download}.log.
 These uploads/downloads were actual SDK calls, distinct from the mocked regression
 checks. No AWS calls or deletion were performed for this validation.
+
+## One-command full demo
+
+Ten regression cases cover implicit/default and explicit all mode on AWS/GCP,
+exact four-operation ordering, selected-provider isolation, correct section
+headings and stage prompts, stopping before each of the four operations, immediate
+stop on a download error and rejection of a user-provided manifest in full mode.
+The old upload-only-default test was superseded; individual operation tests remain.
+The full demo passes each exact upload manifest into the paired download and
+prints the overall success banner only after all four operations pass.
+
+The corrected full-command GCP capture also passed: ./demo --provider gcp --yes
+ran four distinct SDK operations against pr-review-content, verified the one-file
+and three-file downloads against their own upload manifests, and printed 4/4
+operations completed. Total elapsed time was 7.805 s. The local ignored preview is
+output/demo--human-review-learning/preview/full-demo.md. No AWS operations or
+deletes were performed for this follow-up.

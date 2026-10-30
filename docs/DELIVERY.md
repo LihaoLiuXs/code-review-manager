@@ -40,6 +40,7 @@ human-review-learning/
 │   ├── storage.py
 │   └── workflow.py
 ├── tests/
+│   ├── test_full_demo.py
 │   ├── test_separate_demo_operations.py
 │   ├── test_directory_demo.py
 │   ├── test_demo_command.py

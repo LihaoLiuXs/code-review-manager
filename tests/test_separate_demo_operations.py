@@ -74,14 +74,6 @@ def test_directory_upload_and_download_are_independent_commands(bundle_demo, mon
     assert selected==[provider,provider]
 
 
-def test_bare_demo_defaults_to_upload_only(file_demo,monkeypatch):
-    _,clients,_=file_demo
-    monkeypatch.setattr(sys,'argv',['demo','--provider','gcp','--yes'])
-    assert cli.main('demo')==0
-    clients['gcp'].upload.assert_called_once()
-    clients['gcp'].download.assert_not_called()
-
-
 def test_download_without_previous_upload_does_not_touch_cloud(file_demo,monkeypatch,capsys):
     _,clients,selected=file_demo
     assert run(monkeypatch,'download')==1

@@ -278,13 +278,13 @@ def main(kind):
     if demo:
         kind = 'storage'
     parser = argparse.ArgumentParser(
-        description='Code Review Manager: four independent multicloud-py demos'
+        description='Code Review Manager: one command, four multicloud-py demo stages'
         if demo else 'Human Review Learning',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     if kind == 'storage':
-        parser.add_argument('action', choices=['upload','download','upload-directory','download-directory','save','get','verify','sync','directory'],
-                            help='upload | download | upload-directory | download-directory' if demo else 'Storage operation',
-                            **({'nargs': '?', 'default': 'upload', 'metavar': 'OPERATION'} if demo else {}))
+        parser.add_argument('action', choices=['all','upload','download','upload-directory','download-directory','save','get','verify','sync','directory'],
+                            help='all (default) | upload | download | upload-directory | download-directory' if demo else 'Storage operation',
+                            **({'nargs': '?', 'default': 'all', 'metavar': 'OPERATION'} if demo else {}))
         selection = parser.add_mutually_exclusive_group(required=True)
         selection.add_argument('--provider',type=str.lower,choices=['aws','gcp'],
                                help='Run the shared application on this cloud only')
@@ -318,17 +318,21 @@ def main(kind):
                         help='owner/name or https://github.com/owner/name')
     parser.add_argument('--config', default=str(PROJECT_ROOT / 'config.toml') if demo else 'config.toml')
     if demo:
-        parser.epilog = 'Without an action, upload the bundled Markdown only. Run download, upload-directory or download-directory separately.'
+        parser.epilog = 'Without an action, run single upload, single download, directory upload and directory download, asking before each stage.'
     args = parser.parse_args()
     if kind == 'storage' and args.unattended:
         args.interactive = False
-    if demo and args.action in ('save','upload') and not args.file and not args.record:
+    if demo and args.action in ('save','upload','all') and not args.file and not args.record:
         args.file = str(PROJECT_ROOT / 'examples/review_knowledge.demo.md')
     try:
         args.repo = validate_repo(args.repo)
         config = tomllib.loads(Path(args.config).read_text()) if Path(args.config).exists() else {}
         if kind == 'storage':
-            if args.action in ('upload','download','upload-directory','download-directory'):
+            if args.action == 'all':
+                import asyncio
+                from hrl.demo_operations import run_all
+                asyncio.run(run_all(args, config))
+            elif args.action in ('upload','download','upload-directory','download-directory'):
                 import asyncio
                 from hrl.demo_operations import run
                 asyncio.run(run(args, config))

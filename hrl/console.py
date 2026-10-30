@@ -2,14 +2,14 @@
 from datetime import datetime
 
 
-def event(component, action, message, *, fields=(), level='INFO'):
+def event(component, action, message, *, fields=(), level='INFO', show_section=True):
     sections = {
         'STEP 1/4': 'DOWNLOAD EXISTING KNOWLEDGE',
         'STEP 2/4': 'PREPARE KNOWLEDGE',
         'STEP 3/4': 'UPLOAD KNOWLEDGE',
         'STEP 4/4': 'READ BACK & VERIFY',
     }
-    if action in sections:
+    if show_section and action in sections:
         title = f' {sections[action]} '
         print('\n' + title.center(80, '━'), flush=True)
     if level == 'ERROR':
@@ -47,7 +47,7 @@ def step(number, title, *, interactive=False, total=4, section=None, stop_detail
     if section:
         print('\n' + f' {section} '.center(80, '━'), flush=True)
     action = f'{label} {number}/{total}'
-    event('Demo', action, title)
+    event('Demo', action, title, show_section=not section)
     if not interactive:
         return
     while True:

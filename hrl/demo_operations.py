@@ -35,7 +35,7 @@ def verify_download(directory, expected):
             f'SHA-256        : {value["sha256"]}',))
 
 
-async def run(args, config):
+async def run(args, config, *, number=1, total=1):
     if not args.provider or args.providers:
         raise ValueError('Select one --provider aws or --provider gcp')
     if args.cleanup:
@@ -47,7 +47,7 @@ async def run(args, config):
     banner('Code Review Manager — multicloud-py Demo',title)
     event('Demo','PROCESS START',f'One operation: {title}',fields=(
         f'Provider       : {args.provider}',f'Repository     : {args.repo}'))
-    step(1,f'{title} through multicloud-py',interactive=args.interactive,total=1,
+    step(number,f'{title} through multicloud-py',interactive=args.interactive,total=total,
          section=title,stop_detail='This operation did not start.')
     started = perf_counter()
     root = Path('output') / args.repo.replace('/','--') / 'demo' / args.provider
@@ -133,9 +133,10 @@ async def run(args, config):
             state['bucket'] = client.bucket
             write_json(work/'manifest.json',state)
             write_json(latest,state)
-            event('Demo','MANIFEST','Upload recorded for a separate download.',fields=(
+            event('Demo','MANIFEST','Upload recorded for the next download stage.' if total>1 else 'Upload recorded for a separate download.',fields=(
                 f'State file     : {(work/"manifest.json").absolute()}',
-                f'Next command   : ./demo {"download-directory" if is_directory else "download"} --provider {args.provider} --repo {args.repo}'))
+                (f'Next stage     : {number+1}/{total} — {"DIRECTORY DOWNLOAD" if is_directory else "SINGLE FILE DOWNLOAD"}' if total>1 else
+                 f'Next command   : ./demo {"download-directory" if is_directory else "download"} --provider {args.provider} --repo {args.repo}')))
         else:
             restored.mkdir(parents=True,exist_ok=False)
             if is_directory:
@@ -153,6 +154,7 @@ async def run(args, config):
             event('Demo','RESULT','Downloaded content matches the upload manifest.',fields=(f'Files verified : {count}/{count}',))
         event('Demo','PROCESS COMPLETE',f'{title} completed.',fields=(f'Elapsed        : {perf_counter()-started:.3f} s',))
         banner(f'{title} COMPLETED',f'Files: {count}/{count}')
+        return work/'manifest.json' if uploading else restored
     except Exception as exc:
         raise RuntimeError(f'{title} failed: {exc}. Local artifacts retained at {work}') from exc
     finally:
@@ -161,3 +163,31 @@ async def run(args, config):
                 await client.close()
             else:
                 client.close()
+
+
+async def run_all(args, config):
+    """Run four distinct demo stages, each using its corresponding upload manifest."""
+    from argparse import Namespace
+    if args.state:
+        raise ValueError('--state is for individual downloads; the full demo uses its own new uploads')
+    if args.cleanup:
+        raise ValueError('The full SDK demo does not perform cleanup')
+    banner('Code Review Manager — Full multicloud-py Demo',
+           'Single upload → Single download → Directory upload → Directory download')
+    started = perf_counter()
+    manifests = {}
+    for number,action in enumerate(('upload','download','upload-directory','download-directory'),1):
+        options = Namespace(**{**vars(args), 'action': action})
+        if action in ('download','download-directory'):
+            options.state = str(manifests['upload-directory' if action=='download-directory' else 'upload'])
+        result = await run(options,config,number=number,total=4)
+        if action.startswith('upload'):
+            manifests[action] = result
+    single_count = len(read_json(manifests['upload'])['files'])
+    directory_count = len(read_json(manifests['upload-directory'])['files'])
+    event('Demo','FULL DEMO COMPLETE','All four SDK operations completed successfully.',fields=(
+        'Operations     : 4/4',
+        f'Single file    : {single_count} uploaded, {single_count} downloaded, {single_count} verified',
+        f'Directory files: {directory_count} uploaded, {directory_count} downloaded, {directory_count} verified',
+        f'Elapsed        : {perf_counter()-started:.3f} s'))
+    banner('FULL SDK DEMO COMPLETED','Four operations • Downloads verified against their own uploads')

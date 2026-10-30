@@ -1,4 +1,4 @@
-# Four independent multicloud-py demos
+# One command, four multicloud-py demo stages
 
 Code Review Manager demonstrates a single Python codebase using AWS S3 or Google
 Cloud Storage. Provider selection changes configuration, while each operation
@@ -18,6 +18,31 @@ export HRL_GCP_BUCKET=pr-review-content
 
 AWS uses its standard credential chain and bucket region; GCP uses Application
 Default Credentials. Credentials and generated artifacts remain outside Git.
+
+## Run the full demo
+
+```bash
+./demo --provider gcp
+# Or run the same code on AWS:
+./demo --provider aws
+```
+
+The default command runs all four stages in order and asks separately before each:
+
+```text
+Start next step? 1/4 — SINGLE FILE UPLOAD through multicloud-py [y/N]:
+Start next step? 2/4 — SINGLE FILE DOWNLOAD through multicloud-py [y/N]:
+Start next step? 3/4 — DIRECTORY UPLOAD through multicloud-py [y/N]:
+Start next step? 4/4 — DIRECTORY DOWNLOAD through multicloud-py [y/N]:
+```
+
+Use `./demo all --provider gcp` as an explicit equivalent, or add `--yes` for
+unattended execution. Each operation remains a separate logged section. The
+full-demo runner links downloads to its own exact upload manifests, rather than
+relying on a mutable latest pointer. Failure or refusal stops subsequent stages;
+the overall completion banner appears only after all four succeed.
+
+The commands below run just one operation when you want to demonstrate it alone.
 
 ## 1. Single-file upload
 
@@ -65,11 +90,12 @@ sizes and SHA-256 of every file. It performs no upload.
 
 ## Presenter control
 
-Every command waits for its own “Start next step? [y/N]” answer. Only `y` or `yes`
+The full demo waits for a fresh “Start next step? [y/N]” answer before each of
+its four stages; individual operation commands ask once. Only `y` or `yes`
 starts the selected operation. No, empty input or EOF stops with exit code 130;
 invalid answers prompt again. To capture a preview without interaction, explicitly
-add `--yes` to that particular command. There is no automatic next operation.
-Bare `./demo --provider gcp` is shorthand for single-file upload only.
+add `--yes`. Bare `./demo --provider gcp` runs all four stages. An individual
+operation command finishes after that operation.
 
 Change `--provider gcp` to `--provider aws` to run any one of these operations
 on AWS with the same source. A download uses only an upload manifest for the same
@@ -84,7 +110,9 @@ selected review export folder.
 
 Manifests are local under `output/<repository>/demo/<provider>/`. Uploads print
 their per-run manifest path. Download commands use the latest matching manifest
-by default, or a particular earlier upload with `--state PATH`. Copy that manifest
+by default when run individually, or a particular earlier upload with `--state PATH`.
+The full demo records and uses its own upload manifests; --state is only for
+individual downloads. Copy that manifest
 to another reviewer or CI environment if it needs to restore the same upload.
 No credentials are stored in the manifest.
 

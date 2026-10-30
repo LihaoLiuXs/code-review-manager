@@ -15,10 +15,24 @@ retrieves review knowledge through the MultiCloud Python SDK. Select AWS S3 with
 `--provider aws` or Google Cloud Storage with `--provider gcp`; no source edits
 or separate AWS/GCP application implementations are required.
 
-## Four separate SDK demos
+## One command, four SDK demo stages
 
-Run each command independently. Every command demonstrates only its named
-transfer operation through `multicloud-py`:
+Run the full demo with one command. It runs single-file upload, single-file
+download, directory upload, and directory download in that order, with a separate
+section and a yes/no prompt before every stage:
+
+```bash
+./demo --provider gcp
+# Same source code, different provider:
+./demo --provider aws
+```
+
+`./demo all --provider gcp` is an explicit equivalent. For an uninterrupted
+presentation capture, use `./demo --provider gcp --yes`. The final full-demo
+summary appears only after all four stages and both download verifications pass.
+A refusal, EOF, SDK failure or mismatch stops the remaining stages.
+
+The four operations also remain available individually:
 
 ```bash
 ./demo upload --provider gcp
@@ -27,10 +41,10 @@ transfer operation through `multicloud-py`:
 ./demo download-directory --provider gcp
 ```
 
-Change only `--provider gcp` to `--provider aws` for AWS. Each command asks
-**“Start next step? [y/N]”** before starting its operation. Type `y` or `yes` to
-continue; no, an empty answer or EOF stops. `--yes` explicitly runs that one
-selected operation without a prompt. Bare `./demo --provider gcp` uploads only.
+Change only `--provider gcp` to `--provider aws` for AWS. The full command asks
+**“Start next step? [y/N]”** before stages 1/4, 2/4, 3/4 and 4/4. Type `y` or
+`yes` to continue; no, an empty answer or EOF stops. Individual operation commands
+ask once. `--yes` explicitly disables prompts for the selected command.
 
 | Command | SDK operation | Result |
 | --- | --- | --- |
@@ -39,10 +53,12 @@ selected operation without a prompt. Bare `./demo --provider gcp` uploads only.
 | `upload-directory` | `AsyncBucketClient.upload_directory()` | Upload a complete nested review bundle; save a local manifest |
 | `download-directory` | `AsyncBucketClient.download_directory()` | Download the bundle into a fresh folder and verify every path and checksum |
 
-Uploads finish after uploading; they never start a download. Downloads use the
-manifest from their corresponding upload and never upload. An upload result
+Each upload stage finishes before the download stage starts. The full demo uses
+the exact manifest from its own upload for the following download. Individual
+upload commands finish after uploading; individual downloads never upload. An upload result
 confirms SDK success; content verification is reported by the separate download.
-Each command has its own banner, prompt, timing and result summary.
+Each stage has its own banner, prompt, timing and result summary. The full demo
+also prints a final overall result.
 
 After the one-time installation below, run these from the checkout. `./demo`
 automatically uses `.venv/bin/python` and the bundled synthetic examples. Configure

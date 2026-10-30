@@ -105,7 +105,8 @@ and verifies absence through the SDK list_page(). Local files remain available.
 
 hrl/demo_operations.py implements upload, download, upload-directory and
 download-directory. A command makes only its named transfer call; uploads never
-download automatically. Bare ./demo now means single-file upload only. The
+download automatically. The default ./demo orchestrates all four stages through run_all(); individual
+commands still perform only their named transfer. The
 learning skill's save workflow and legacy explicit directory round-trip remain
 separate advanced workflows for compatibility.
 
@@ -116,3 +117,12 @@ key/prefix, bucket/provider/repository identity and per-file size/checksum. A
 separate download validates that manifest, saves into a fresh folder and verifies
 returned content. No operation overwrites the existing learning JSON knowledge
 record. No native provider SDK calls or source SDK edits are introduced.
+
+## Full demo orchestration
+
+run_all() invokes the four existing operation functions in order, with prompts
+numbered 1/4 through 4/4. Upload functions return their per-run manifest paths,
+which are passed explicitly into their corresponding download stages. The final
+summary is printed only after every stage returns successfully. Cancellation or
+an SDK/content-verification error propagates immediately and prevents later stages.
+No provider-specific operations or additional SDK implementations are introduced.

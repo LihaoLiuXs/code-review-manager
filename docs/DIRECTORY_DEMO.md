@@ -22,6 +22,13 @@ Follow README to install the SDK source packages with `[async]` extras. Configur
 an existing bucket and credentials for the selected provider. Object write/read
 and listing permissions are needed. No cloud resources are provisioned.
 
+## Include both directory stages in the full demo
+
+`./demo --provider gcp` now runs single upload, single download, directory upload
+and directory download in one command, with prompts and separate section headings.
+Use `--provider aws` for AWS. Each download verifies the upload from that same run.
+The standalone directory commands below remain available.
+
 ## Directory upload only
 
 ```bash
