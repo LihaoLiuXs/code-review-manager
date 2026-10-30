@@ -23,6 +23,8 @@ def test_demo_narrates_file_upload_and_separate_sdk_read(tmp_path,monkeypatch,ca
     assert run_demo(tmp_path,monkeypatch,provider,client)==0
     output=capsys.readouterr().out
     assert '[PROCESS START]' in output
+    assert 'DOWNLOAD EXISTING KNOWLEDGE' in output
+    assert 'CHECK CLOUD ACCESS' not in output
     assert 'Input Markdown:' in output and 'review_knowledge.md' in output
     assert 'Files planned  : 1' in output
     assert 'BucketClient.upload()' in output

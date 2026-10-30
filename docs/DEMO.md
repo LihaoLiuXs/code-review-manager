@@ -37,7 +37,7 @@ From the HRL project directory:
 Before every stage the demo asks:
 
 ```text
-Start next step? 1/4 — Check cloud access and read the existing baseline [y/N]:
+Start next step? 1/4 — Download existing knowledge through multicloud-py [y/N]:
 Start next step? 2/4 — Prepare knowledge and preserve the retryable revision [y/N]:
 Start next step? 3/4 — Upload knowledge | destination 1/1 | provider=aws [y/N]:
 Start next step? 4/4 — Read back and verify the uploaded knowledge [y/N]:
@@ -99,7 +99,7 @@ response = self.client.download(key=key)
 ```
 
 The full demo opens with a boxed welcome banner, shows provider and bucket
-configuration, and separates CHECK CLOUD ACCESS, PREPARE KNOWLEDGE,
+configuration, and separates DOWNLOAD EXISTING KNOWLEDGE, PREPARE KNOWLEDGE,
 UPLOAD KNOWLEDGE, and READ BACK & VERIFY with prominent headings. 🔄 marks
 SDK activity, ✅ marks successful results, and ❌ marks errors. The final boxed
 DEMO COMPLETED SUCCESSFULLY banner appears only after read-back verification.
@@ -125,7 +125,7 @@ are placeholders; live values depend on the run):
 12:00:00.000 INFO  Demo       [PROCESS START] Human Review Learning | MultiCloud Python SDK
     Selected provider: gcp
     Repository     : demo/human-review-learning
-12:00:00.000 INFO  Demo       [STEP 1/4] Check cloud access and read the existing baseline
+12:00:00.000 INFO  Demo       [STEP 1/4] Download existing knowledge through multicloud-py
 12:00:00.500 INFO  Demo       [STEP 2/4] Prepare knowledge and preserve the retryable revision
     Markdown       : 6.72 KiB (6,883 bytes)
     Revision       : 1
@@ -165,7 +165,7 @@ are placeholders; live values depend on the run):
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
-Present this as: **start → check cloud access → prepare the Markdown → upload
+Present this as: **start → download existing knowledge → prepare the Markdown → upload
 one file → upload successful → download through the SDK → verify → complete**.
 The precheck is an earlier read of the baseline. READ-BACK START marks the
 separate read performed after upload succeeds. No extra command triggers it.
@@ -277,3 +277,12 @@ and metadata together in BlobStore.
 Operation durations exclude the prompt before that operation. Total elapsed time
 includes the presenter's time answering prompts. Prompt behavior is covered by
 mocked SDK tests; these checks do not invent user answers for live cloud runs.
+
+## Native directory operations
+
+For the review-bundle use case, run `./demo directory --provider aws` or change
+only the provider to gcp. This uses the SDK's native AsyncBucketClient directory
+operations and prompts before prepare/upload/download/verify. See
+[Directory demo](DIRECTORY_DEMO.md) for the complete walkthrough and optional
+cleanup. The first single-file section is explicitly named DOWNLOAD EXISTING
+KNOWLEDGE to make its SDK download clear to the audience.

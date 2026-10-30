@@ -116,8 +116,8 @@ class Store:
         self.client.close()
 
 
-def connect(provider: str, config: dict) -> Store:
-    from multicloud.blob.blob_client import BucketClient
+def client_options(provider: str, config: dict) -> dict:
+    """Shared provider configuration for synchronous and asynchronous SDK clients."""
     if provider not in ('aws', 'gcp'):
         raise ValueError('Provider must be aws or gcp')
     storage = config.get('storage', {})
@@ -130,7 +130,13 @@ def connect(provider: str, config: dict) -> Store:
     region = os.getenv(region_variable) or options.get('region')
     if region:
         kwargs['region'] = region
-    return Store(BucketClient(**kwargs), prefix=storage.get('prefix', 'review_knowledge'))
+    return kwargs
+
+
+def connect(provider: str, config: dict) -> Store:
+    from multicloud.blob.blob_client import BucketClient
+    return Store(BucketClient(**client_options(provider, config)),
+                 prefix=config.get('storage', {}).get('prefix', 'review_knowledge'))
 
 
 def choose_existing(records: dict[str, dict | None]) -> dict | None:

@@ -13,17 +13,20 @@ human-review-learning/
 │       └── learn-reviews/
 │           └── SKILL.md -> ../../../.agents/skills/learn-reviews/SKILL.md
 ├── docs/
+│   ├── DIRECTORY_DEMO.md
 │   ├── DEMO.md
 │   ├── DELIVERY.md
 │   ├── SDK.md
 │   └── VALIDATION.md
 ├── examples/
+│   ├── review_bundle/                 # Synthetic nested directory-demo input
 │   └── review_knowledge.demo.md
 ├── hrl/
 │   ├── __init__.py
 │   ├── classification.py
 │   ├── cli.py
 │   ├── console.py
+│   ├── directory_demo.py
 │   ├── github_reviews.py
 │   ├── io.py
 │   ├── knowledge.py
@@ -36,6 +39,7 @@ human-review-learning/
 │   ├── storage.py
 │   └── workflow.py
 ├── tests/
+│   ├── test_directory_demo.py
 │   ├── test_demo_command.py
 │   ├── test_interactive_demo.py
 │   ├── test_cli.py

@@ -10,7 +10,7 @@ Private remote: https://git.soma.salesforce.com/chameleon/human-review-learning
   isolated environment. Replaced database operations with BucketClient uploads,
   downloads and bucket existence checks. SDK sources remain untouched. Obsolete DocStore distributions and
   google-cloud-firestore were uninstalled before the passing test run.
-- `.venv/bin/python -m pytest -q`: **110 passed** including the interactive stage controls and full visual presentation.
+- `.venv/bin/python -m pytest -q`: **125 passed** including native directory operations, interactive controls and presentation.
 - Tests include conservative classification, evidence validation, semantic merge
   orchestration, stable IDs, preservation, duplicate source prevention, pagination,
   old PRs with recent feedback, and the existing end-to-end controlled fixture.
@@ -156,3 +156,24 @@ upload preserves the blob and pending revision, reports not verified, skips the
 success banner and returns 130. Tests use controlled SDK doubles and do not
 supply invented approvals to a live cloud run. No new live upload was performed
 for the interactive controls.
+
+## Review bundle directory demo
+
+Fifteen new regression cases exercise native async SDK interfaces on AWS/GCP,
+nested three-file round trips, partial upload/download results, missing/extra
+files, byte mismatches, cancellation at all four stages, symlink rejection,
+optional UUID-scoped cleanup, cancelled cleanup and leftover-object detection.
+Existing tests also protect the DOWNLOAD EXISTING KNOWLEDGE section title.
+
+A live GCP run uploaded three synthetic files (1,448 bytes), downloaded them into
+a fresh folder and verified every relative path and SHA-256. The SDK returned
+3/3 uploads and downloads with zero failed transfers. Upload took 2.535 s, download
+2.060 s and the full demo 5.889 s. The prefix was
+review_bundles/demo%2Fhuman-review-learning/c175c739b6544544aa7e17b30b6efb19/.
+The complete local printout is ignored at
+output/demo--human-review-learning/demo-directory-gcp.log. Live deletion and AWS
+directory transfers were not performed; those paths were checked with SDK doubles.
+
+The virtual environment includes both SDK async provider extras and pip check
+passes. Source SDK commit remains 550ba3babfaefe68aaaa340f59bbfda77d123398, clean
+and unmodified. Resolved third-party requirements are recorded in requirements.txt.

@@ -186,7 +186,7 @@ def storage_command(args, config):
         event('Demo', 'UPLOAD PLAN', 'Upload one knowledge file, download it, then verify its content.', fields=(
             f'Files planned  : 1 | Destinations: {len(providers)}',
             'Storage format : One JSON blob per destination; Markdown in knowledge_md'))
-        step(1, 'Check cloud access and read the existing baseline', interactive=interactive)
+        step(1, 'Download existing knowledge through multicloud-py', interactive=interactive)
     else:
         step(1, 'Read knowledge from the selected cloud', interactive=interactive, total=1)
     stores = {}
@@ -282,7 +282,7 @@ def main(kind):
         if demo else 'Human Review Learning',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     if kind == 'storage':
-        parser.add_argument('action', choices=['save','get','verify','sync'],
+        parser.add_argument('action', choices=['save','get','verify','sync','directory'],
                             **({'nargs': '?', 'default': 'save'} if demo else {}))
         selection = parser.add_mutually_exclusive_group(required=True)
         selection.add_argument('--provider',type=str.lower,choices=['aws','gcp'],
@@ -291,6 +291,10 @@ def main(kind):
         parser.add_argument('--record')
         parser.add_argument('--file')
         parser.add_argument('--output')
+        parser.add_argument('--directory', default=str(PROJECT_ROOT / 'examples/review_bundle'),
+                            help='Review bundle directory for the directory demo')
+        parser.add_argument('--cleanup', action='store_true',
+                            help='After verification, delete only this directory demo run from the bucket')
         pacing = parser.add_mutually_exclusive_group()
         pacing.add_argument('--yes', dest='unattended', action='store_true', default=False,
                             help='Run all steps without confirmation prompts')
@@ -322,7 +326,14 @@ def main(kind):
         args.repo = validate_repo(args.repo)
         config = tomllib.loads(Path(args.config).read_text()) if Path(args.config).exists() else {}
         if kind == 'storage':
-            storage_command(args,config)
+            if args.action == 'directory':
+                import asyncio
+                from hrl.directory_demo import run
+                asyncio.run(run(args, config))
+            else:
+                if args.cleanup:
+                    raise ValueError('--cleanup is only supported by the directory demo')
+                storage_command(args,config)
         else:
             directory = output_dir(args.repo,args.output_dir)
             if kind == 'fetch':

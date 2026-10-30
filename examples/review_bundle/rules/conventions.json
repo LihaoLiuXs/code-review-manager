@@ -1,0 +1,14 @@
+{
+  "demo_only": true,
+  "provenance": "Synthetic examples; not extracted or confirmed human feedback",
+  "rules": [
+    {
+      "id": "DEMO-001",
+      "rule": "Verify uploaded review artifacts by reading them back."
+    },
+    {
+      "id": "DEMO-002",
+      "rule": "Keep review guidance and source context together."
+    }
+  ]
+}

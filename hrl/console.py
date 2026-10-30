@@ -4,7 +4,7 @@ from datetime import datetime
 
 def event(component, action, message, *, fields=(), level='INFO'):
     sections = {
-        'STEP 1/4': 'CHECK CLOUD ACCESS',
+        'STEP 1/4': 'DOWNLOAD EXISTING KNOWLEDGE',
         'STEP 2/4': 'PREPARE KNOWLEDGE',
         'STEP 3/4': 'UPLOAD KNOWLEDGE',
         'STEP 4/4': 'READ BACK & VERIFY',
@@ -43,8 +43,11 @@ class DemoStopped(Exception):
     """The presenter declined the next step or input was unavailable."""
 
 
-def step(number, title, *, interactive=False, total=4):
-    event('Demo', f'STEP {number}/{total}', title)
+def step(number, title, *, interactive=False, total=4, section=None, stop_detail=None):
+    if section:
+        print('\n' + f' {section} '.center(80, '━'), flush=True)
+    action = f'DIRECTORY STEP {number}/{total}' if section else f'STEP {number}/{total}'
+    event('Demo', action, title)
     if not interactive:
         return
     while True:
@@ -55,6 +58,6 @@ def step(number, title, *, interactive=False, total=4):
         if answer in ('yes', 'y'):
             return
         if answer in ('no', 'n', ''):
-            detail = 'The upload remains in the bucket and is not verified.' if number == 4 else 'This step did not start.'
+            detail = stop_detail or ('The upload remains in the bucket and is not verified.' if number == 4 else 'This step did not start.')
             raise DemoStopped(f'Stopped before step {number}/{total}. {detail}')
         print('Please enter yes or no.', flush=True)

@@ -1,0 +1,14 @@
+{
+  "demo_only": true,
+  "provenance": "Fictional reviewer comments; no real PRs or human provenance claimed",
+  "comments": [
+    {
+      "id": "SYNTHETIC-001",
+      "body": "Please verify the downloaded content before declaring the upload successful."
+    },
+    {
+      "id": "SYNTHETIC-002",
+      "body": "Can we include the source context with the reusable review guidance?"
+    }
+  ]
+}

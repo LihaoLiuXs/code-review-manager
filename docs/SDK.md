@@ -79,3 +79,24 @@ or EOF stops all remaining steps. If the presenter stops after uploading, the
 blob is retained and reported as not verified. `--yes` explicitly disables
 prompts. The skill's existing storage command remains unattended by default;
 `--interactive` enables the same control there. Both modes use the same SDK calls.
+
+## Native asynchronous directory APIs
+
+The same inspected SDK commit exposes AsyncBucketClient.upload_directory(),
+download_directory(), delete_directory() and list_page(). The directory demo
+uses these APIs directly, preserves nested paths and checks the returned
+total_files, successful_uploads/successful_downloads, failed_transfers and
+total_bytes_transferred. It then verifies the restored file set and SHA-256 of
+each file against a unique local snapshot. It never claims verification solely
+from transfer counts. Upload failures prevent downloading; download failures and
+content mismatches prevent completion and cleanup.
+
+Install provider packages with their [async] extras: AWS uses aiobotocore; GCP
+uses gcloud-aio-storage and aiohttp. These are SDK implementation dependencies,
+not directly called by application code. Both clients use the same client_options
+provider configuration. requirements.txt records the resolved compatible
+third-party versions; the SDK source itself remains unchanged.
+
+Every cloud prefix is review_bundles/<encoded-repository>/<generated-UUID>/,
+including the trailing slash. Optional cleanup can only delete that run's prefix
+and verifies absence through the SDK list_page(). Local files remain available.

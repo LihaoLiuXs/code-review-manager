@@ -25,7 +25,7 @@ verifies its content, so one command demonstrates the SDK end to end:
 ./demo --provider gcp
 ```
 
-The demo asks **“Start next step? [y/N]”** before each stage: cloud preflight,
+The demo asks **“Start next step? [y/N]”** before each stage: downloading existing knowledge,
 local preparation, upload, and read-back verification. Type `y` or `yes` to
 continue. Type `n`, press Enter without an answer, or close input to stop.
 Stopping returns exit code 130 and never reports successful completion. If you
@@ -56,6 +56,50 @@ This is a small, manually executed Python demo and Claude Code skill. It learns
 from **confirmed human** feedback, preserves evidence, merges older conventions,
 and writes one logical document per `owner/repository`. It does not execute AI
 reviews, train a model, run a service, or replace human PR approval.
+
+## Directory demo: share a review knowledge bundle
+
+A reviewer or CI job needs the complete review context: the knowledge Markdown,
+structured rules, and source comments. The directory demo uploads that folder,
+downloads it into a fresh local folder, and verifies every file and relative path
+through the native `multicloud-py` directory APIs.
+
+```bash
+./demo directory --provider aws
+./demo directory --provider gcp
+```
+
+Both commands use the same source and synthetic three-file bundle:
+
+```text
+examples/review_bundle/
+├── knowledge.md
+├── reviews/comments.json
+└── rules/conventions.json
+```
+
+The four prompted stages are prepare bundle, upload directory, download directory,
+and verify restored files. SDK operations are `AsyncBucketClient.upload_directory()`
+and `AsyncBucketClient.download_directory()`; there is no application loop that
+uploads or downloads individual objects. Logs report the SDK's transfer counts,
+failed transfers, bytes and each verified filename.
+
+```bash
+# Use your own explicitly selected review export folder.
+./demo directory --provider gcp --directory output/my-review-export
+
+# Optional fifth prompted stage: remove only this demo run's cloud prefix.
+./demo directory --provider gcp --cleanup
+
+# Explicit unattended presentation run.
+./demo directory --provider gcp --yes
+```
+
+Each run gets a unique cloud prefix and fresh local source/download folders under
+ignored `output/`. No existing knowledge or folders are overwritten. `--cleanup`
+calls the SDK's native `delete_directory()` only for that run, then checks that
+no objects remain. It retains the local files. See [the directory demo guide](docs/DIRECTORY_DEMO.md)
+for setup, permissions, failure handling and live results.
 
 ## Two functional modules
 
@@ -103,8 +147,8 @@ SDK="$(cd ../multicloud-py && pwd)"
   -e "$SDK/packages/common/multicloud-aws-common" \
   -e "$SDK/packages/common/multicloud-gcp-common" \
   -e "$SDK/packages/blob/multicloud-blob" \
-  -e "$SDK/packages/blob/multicloud-blob-aws" \
-  -e "$SDK/packages/blob/multicloud-blob-gcp"
+  -e "$SDK/packages/blob/multicloud-blob-aws[async]" \
+  -e "$SDK/packages/blob/multicloud-blob-gcp[async]"
 .venv/bin/pip check
 .venv/bin/python -m pytest
 ```
@@ -178,9 +222,11 @@ gcloud storage buckets create "gs://$HRL_GCP_BUCKET" \
 
 Choose locations and access policies appropriate for your demo accounts. Runtime
 permissions: S3 `GetObject`/`PutObject` on the knowledge prefix and `ListBucket`
-for bucket checks; GCS `storage.objects.get`, `storage.objects.create`, and
+for bucket checks and directory listing; GCS `storage.objects.get`, `storage.objects.create`, and
 `storage.objects.delete` (required to overwrite existing objects), plus
-`storage.buckets.get` for bucket checks. Provisioning requires additional
+`storage.buckets.get` for bucket checks. Directory downloads also require
+`storage.objects.list`; optional directory cleanup requires object-delete permission
+(S3 `DeleteObject`, GCS `storage.objects.delete`). Provisioning requires additional
 administration permissions. Credentials and permission errors block writes.
 A missing object means no knowledge yet only after the bucket is confirmed to
 exist; a missing/inaccessible bucket is an error.
@@ -500,6 +546,8 @@ hrl/classification.py                provenance and manual cache
 hrl/knowledge.py                     evidence validation and merge/render
 hrl/multicloud_store.py              ONE provider-neutral BlobStore adapter
 examples/review_knowledge.demo.md    committed, synthetic storage-demo input
+examples/review_bundle/              synthetic nested review context for directory transfers
+hrl/directory_demo.py                native SDK directory upload/download/verification
 docs/DEMO.md                        provider-parameter demo runbook
 hrl/cli.py, hrl/io.py                 manual command/file helpers
 scripts/fetch_reviews.py             collector entry point
