@@ -100,3 +100,19 @@ third-party versions; the SDK source itself remains unchanged.
 Every cloud prefix is review_bundles/<encoded-repository>/<generated-UUID>/,
 including the trailing slash. Optional cleanup can only delete that run's prefix
 and verifies absence through the SDK list_page(). Local files remain available.
+
+## Independent audience-facing operations
+
+hrl/demo_operations.py implements upload, download, upload-directory and
+download-directory. A command makes only its named transfer call; uploads never
+download automatically. Bare ./demo now means single-file upload only. The
+learning skill's save workflow and legacy explicit directory round-trip remain
+separate advanced workflows for compatibility.
+
+The single-file example uploads raw Markdown through BucketClient.upload() and
+downloads through BucketClient.download(). Directory commands call the native
+AsyncBucketClient directory APIs once each. A local manifest records the cloud
+key/prefix, bucket/provider/repository identity and per-file size/checksum. A
+separate download validates that manifest, saves into a fresh folder and verifies
+returned content. No operation overwrites the existing learning JSON knowledge
+record. No native provider SDK calls or source SDK edits are introduced.

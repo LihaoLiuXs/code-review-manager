@@ -43,10 +43,10 @@ class DemoStopped(Exception):
     """The presenter declined the next step or input was unavailable."""
 
 
-def step(number, title, *, interactive=False, total=4, section=None, stop_detail=None):
+def step(number, title, *, interactive=False, total=4, section=None, stop_detail=None, label='STEP'):
     if section:
         print('\n' + f' {section} '.center(80, '━'), flush=True)
-    action = f'DIRECTORY STEP {number}/{total}' if section else f'STEP {number}/{total}'
+    action = f'{label} {number}/{total}'
     event('Demo', action, title)
     if not interactive:
         return

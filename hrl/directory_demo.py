@@ -57,7 +57,7 @@ async def run(args, config):
         f'Input directory: {Path(args.directory).absolute()}',
         'SDK            : multicloud-py AsyncBucketClient'))
     def advance(number, title, section, detail='This step did not start.'):
-        step(number,title,interactive=args.interactive,total=total,section=section,stop_detail=detail)
+        step(number,title,interactive=args.interactive,total=total,section=section,stop_detail=detail,label='DIRECTORY STEP')
     advance(1,'Prepare a portable review knowledge bundle','PREPARE REVIEW BUNDLE')
     source = Path(args.directory).absolute()
     inventory(source)

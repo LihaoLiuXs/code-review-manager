@@ -15,61 +15,43 @@ retrieves review knowledge through the MultiCloud Python SDK. Select AWS S3 with
 `--provider aws` or Google Cloud Storage with `--provider gcp`; no source edits
 or separate AWS/GCP application implementations are required.
 
-A run reads/writes only the selected cloud. Saving also downloads the record and
-verifies its content, so one command demonstrates the SDK end to end:
+## Four separate SDK demos
+
+Run each command independently. Every command demonstrates only its named
+transfer operation through `multicloud-py`:
 
 ```bash
-./demo --provider aws
-
-# Same command and source code; change only the provider.
-./demo --provider gcp
+./demo upload --provider gcp
+./demo download --provider gcp
+./demo upload-directory --provider gcp
+./demo download-directory --provider gcp
 ```
 
-The demo asks **“Start next step? [y/N]”** before each stage: downloading existing knowledge,
-local preparation, upload, and read-back verification. Type `y` or `yes` to
-continue. Type `n`, press Enter without an answer, or close input to stop.
-Stopping returns exit code 130 and never reports successful completion. If you
-stop after upload, the blob remains stored but is explicitly not verified.
+Change only `--provider gcp` to `--provider aws` for AWS. Each command asks
+**“Start next step? [y/N]”** before starting its operation. Type `y` or `yes` to
+continue; no, an empty answer or EOF stops. `--yes` explicitly runs that one
+selected operation without a prompt. Bare `./demo --provider gcp` uploads only.
 
-For an unattended run, opt in with `./demo --provider gcp --yes`.
+| Command | SDK operation | Result |
+| --- | --- | --- |
+| `upload` | `BucketClient.upload()` | Upload one raw Markdown file; save a local manifest |
+| `download` | `BucketClient.download()` | Download that file into a fresh folder and verify its checksum |
+| `upload-directory` | `AsyncBucketClient.upload_directory()` | Upload a complete nested review bundle; save a local manifest |
+| `download-directory` | `AsyncBucketClient.download_directory()` | Download the bundle into a fresh folder and verify every path and checksum |
 
-After the one-time installation below, run these from the checkout. The launcher
-uses `.venv/bin/python` automatically, the bundled `examples/review_knowledge.demo.md`,
-repository key `demo/human-review-learning`, and the checkout's `config.toml`.
-Existing cloud credential and bucket configuration still applies.
+Uploads finish after uploading; they never start a download. Downloads use the
+manifest from their corresponding upload and never upload. An upload result
+confirms SDK success; content verification is reported by the separate download.
+Each command has its own banner, prompt, timing and result summary.
 
-```bash
-# Read the saved record with the same simple command.
-./demo get --provider aws
+After the one-time installation below, run these from the checkout. `./demo`
+automatically uses `.venv/bin/python` and the bundled synthetic examples. Configure
+the selected bucket and credentials first. Source files and recorded manifests
+are scoped to `--repo` (default `demo/human-review-learning`) and provider.
 
-# Use your own Markdown and repository key.
-./demo --provider aws --repo demo/my-reviews --file my-knowledge.md
-
-# Show all options; the original scripts/storage.py commands still work.
-./demo --help
-```
-
-The committed sample is clearly labeled synthetic demo content. See the
-[demo runbook](docs/DEMO.md) for setup, logs, retrieval and verification.
-
-This is a small, manually executed Python demo and Claude Code skill. It learns
-from **confirmed human** feedback, preserves evidence, merges older conventions,
-and writes one logical document per `owner/repository`. It does not execute AI
-reviews, train a model, run a service, or replace human PR approval.
-
-## Directory demo: share a review knowledge bundle
-
-A reviewer or CI job needs the complete review context: the knowledge Markdown,
-structured rules, and source comments. The directory demo uploads that folder,
-downloads it into a fresh local folder, and verifies every file and relative path
-through the native `multicloud-py` directory APIs.
-
-```bash
-./demo directory --provider aws
-./demo directory --provider gcp
-```
-
-Both commands use the same source and synthetic three-file bundle:
+The single-file sample is `examples/review_knowledge.demo.md`. The directory use
+case is sharing review guidance and its source context with another reviewer or
+CI job:
 
 ```text
 examples/review_bundle/
@@ -78,28 +60,32 @@ examples/review_bundle/
 └── rules/conventions.json
 ```
 
-The four prompted stages are prepare bundle, upload directory, download directory,
-and verify restored files. SDK operations are `AsyncBucketClient.upload_directory()`
-and `AsyncBucketClient.download_directory()`; there is no application loop that
-uploads or downloads individual objects. Logs report the SDK's transfer counts,
-failed transfers, bytes and each verified filename.
-
 ```bash
-# Use your own explicitly selected review export folder.
-./demo directory --provider gcp --directory output/my-review-export
+# Use your own selected inputs.
+./demo upload --provider gcp --file my-knowledge.md
+./demo upload-directory --provider gcp --directory output/my-review-export
 
-# Optional fifth prompted stage: remove only this demo run's cloud prefix.
-./demo directory --provider gcp --cleanup
-
-# Explicit unattended presentation run.
-./demo directory --provider gcp --yes
+# Download a specific earlier upload using the manifest path printed by upload.
+./demo download --provider gcp --state /path/to/single-upload/manifest.json
+./demo download-directory --provider gcp --state /path/to/bundle-upload/manifest.json
 ```
 
-Each run gets a unique cloud prefix and fresh local source/download folders under
-ignored `output/`. No existing knowledge or folders are overwritten. `--cleanup`
-calls the SDK's native `delete_directory()` only for that run, then checks that
-no objects remain. It retains the local files. See [the directory demo guide](docs/DIRECTORY_DEMO.md)
-for setup, permissions, failure handling and live results.
+Latest upload manifests and per-run manifests are retained under ignored
+`output/<repository>/demo/<provider>/`. Every download uses a fresh folder. Run
+the corresponding upload before downloading, or supply its saved manifest with
+`--state`. Manifests identify the provider, bucket, repository, cloud key/prefix,
+file sizes and checksums, preventing accidental cross-bucket verification.
+Neither demo upload replaces the learning workflow's existing knowledge record.
+
+The samples are explicitly synthetic and contain no real PR data or confirmed
+human feedback. See the [demo runbook](docs/DEMO.md) and
+[directory demo guide](docs/DIRECTORY_DEMO.md).
+
+The Human Review Learning (HRL) skill remains available for confirmed review
+learning. Its `scripts/storage.py save` workflow preserves preflight, merge and
+read-back safeguards. The four audience-facing SDK commands above demonstrate
+the transfer operations individually; the learning workflow stores its metadata
+and Markdown together as JSON.
 
 ## Two functional modules
 

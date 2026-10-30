@@ -278,23 +278,25 @@ def main(kind):
     if demo:
         kind = 'storage'
     parser = argparse.ArgumentParser(
-        description='Human Review Learning: upload, read back and verify through the MultiCloud Python SDK'
+        description='Code Review Manager: four independent multicloud-py demos'
         if demo else 'Human Review Learning',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     if kind == 'storage':
-        parser.add_argument('action', choices=['save','get','verify','sync','directory'],
-                            **({'nargs': '?', 'default': 'save'} if demo else {}))
+        parser.add_argument('action', choices=['upload','download','upload-directory','download-directory','save','get','verify','sync','directory'],
+                            help='upload | download | upload-directory | download-directory' if demo else 'Storage operation',
+                            **({'nargs': '?', 'default': 'upload', 'metavar': 'OPERATION'} if demo else {}))
         selection = parser.add_mutually_exclusive_group(required=True)
         selection.add_argument('--provider',type=str.lower,choices=['aws','gcp'],
                                help='Run the shared application on this cloud only')
-        selection.add_argument('--providers',help='Explicit optional multi-cloud mode, e.g. aws,gcp')
-        parser.add_argument('--record')
+        selection.add_argument('--providers',help=argparse.SUPPRESS if demo else 'Explicit optional multi-cloud mode, e.g. aws,gcp')
+        parser.add_argument('--record',help=argparse.SUPPRESS if demo else 'Pending knowledge record')
         parser.add_argument('--file')
-        parser.add_argument('--output')
+        parser.add_argument('--output',help=argparse.SUPPRESS if demo else 'Output file')
+        parser.add_argument('--state', help='Upload manifest to use for a separate download')
         parser.add_argument('--directory', default=str(PROJECT_ROOT / 'examples/review_bundle'),
                             help='Review bundle directory for the directory demo')
         parser.add_argument('--cleanup', action='store_true',
-                            help='After verification, delete only this directory demo run from the bucket')
+                            help=argparse.SUPPRESS if demo else 'After verification, delete only this legacy directory run')
         pacing = parser.add_mutually_exclusive_group()
         pacing.add_argument('--yes', dest='unattended', action='store_true', default=False,
                             help='Run all steps without confirmation prompts')
@@ -316,17 +318,21 @@ def main(kind):
                         help='owner/name or https://github.com/owner/name')
     parser.add_argument('--config', default=str(PROJECT_ROOT / 'config.toml') if demo else 'config.toml')
     if demo:
-        parser.epilog = 'Without an action, upload the bundled synthetic Markdown, then download and verify it. Use --file for your own Markdown.'
+        parser.epilog = 'Without an action, upload the bundled Markdown only. Run download, upload-directory or download-directory separately.'
     args = parser.parse_args()
     if kind == 'storage' and args.unattended:
         args.interactive = False
-    if demo and args.action == 'save' and not args.file and not args.record:
+    if demo and args.action in ('save','upload') and not args.file and not args.record:
         args.file = str(PROJECT_ROOT / 'examples/review_knowledge.demo.md')
     try:
         args.repo = validate_repo(args.repo)
         config = tomllib.loads(Path(args.config).read_text()) if Path(args.config).exists() else {}
         if kind == 'storage':
-            if args.action == 'directory':
+            if args.action in ('upload','download','upload-directory','download-directory'):
+                import asyncio
+                from hrl.demo_operations import run
+                asyncio.run(run(args, config))
+            elif args.action == 'directory':
                 import asyncio
                 from hrl.directory_demo import run
                 asyncio.run(run(args, config))

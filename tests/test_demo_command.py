@@ -35,7 +35,7 @@ def test_short_demo_uploads_sample_and_reads_it_back_on_only_selected_cloud(demo
         assert config['storage'][selected]['bucket'] == f'{provider}-demo'
         return Store(client)
     monkeypatch.setattr(cli, 'connect', connect)
-    monkeypatch.setattr(sys, 'argv', ['demo', '--yes', '--provider', provider])
+    monkeypatch.setattr(sys, 'argv', ['demo', 'save', '--yes', '--provider', provider])
     assert cli.main('demo') == 0
     stored = json.loads(next(iter(blobs.values())))
     assert stored['repo_id'] == 'demo/human-review-learning'
@@ -53,7 +53,7 @@ def test_demo_accepts_custom_relative_markdown_and_repository(demo_checkout, mon
     client, blobs = fake_client(provider)
     monkeypatch.setattr(cli, 'connect', lambda p, c: Store(client))
     Path('my-knowledge.md').write_text('# Custom demo\n')
-    monkeypatch.setattr(sys, 'argv', ['demo', '--yes', '--provider', provider, '--repo', 'demo/custom', '--file', 'my-knowledge.md'])
+    monkeypatch.setattr(sys, 'argv', ['demo', 'save', '--yes', '--provider', provider, '--repo', 'demo/custom', '--file', 'my-knowledge.md'])
     assert cli.main('demo') == 0
     stored = json.loads(next(iter(blobs.values())))
     assert stored['repo_id'] == 'demo/custom'
@@ -77,7 +77,7 @@ def test_demo_record_retry_does_not_fall_back_to_sample(demo_checkout, monkeypat
     monkeypatch.setattr(cli, 'connect', lambda p, c: Store(client))
     record = make_record('demo/human-review-learning', 'exact retry content', [], None, {})
     write_json('pending.json', {'base': None, 'record': record})
-    monkeypatch.setattr(sys, 'argv', ['demo', '--yes', '--provider', 'aws', '--record', 'pending.json'])
+    monkeypatch.setattr(sys, 'argv', ['demo', 'save', '--yes', '--provider', 'aws', '--record', 'pending.json'])
     assert cli.main('demo') == 0
     assert json.loads(next(iter(blobs.values()))) == record
 
@@ -98,7 +98,7 @@ def test_demo_reports_failed_readback_as_failure(demo_checkout, monkeypatch, cap
         return original(key)
     client.download.side_effect = download
     monkeypatch.setattr(cli, 'connect', lambda p, c: Store(client))
-    monkeypatch.setattr(sys, 'argv', ['demo', '--yes', '--provider', 'aws'])
+    monkeypatch.setattr(sys, 'argv', ['demo', 'save', '--yes', '--provider', 'aws'])
     assert cli.main('demo') == 1
     output = capsys.readouterr().out
     assert '[PROCESS FAILED]' in output

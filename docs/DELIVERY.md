@@ -26,6 +26,7 @@ human-review-learning/
 │   ├── classification.py
 │   ├── cli.py
 │   ├── console.py
+│   ├── demo_operations.py
 │   ├── directory_demo.py
 │   ├── github_reviews.py
 │   ├── io.py
@@ -39,6 +40,7 @@ human-review-learning/
 │   ├── storage.py
 │   └── workflow.py
 ├── tests/
+│   ├── test_separate_demo_operations.py
 │   ├── test_directory_demo.py
 │   ├── test_demo_command.py
 │   ├── test_interactive_demo.py

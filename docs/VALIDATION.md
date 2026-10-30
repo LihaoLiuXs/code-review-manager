@@ -10,7 +10,7 @@ Private remote: https://git.soma.salesforce.com/chameleon/human-review-learning
   isolated environment. Replaced database operations with BucketClient uploads,
   downloads and bucket existence checks. SDK sources remain untouched. Obsolete DocStore distributions and
   google-cloud-firestore were uninstalled before the passing test run.
-- `.venv/bin/python -m pytest -q`: **125 passed** including native directory operations, interactive controls and presentation.
+- `.venv/bin/python -m pytest -q`: **138 passed** including separate SDK operations, native directory transfers and presenter controls.
 - Tests include conservative classification, evidence validation, semantic merge
   orchestration, stable IDs, preservation, duplicate source prevention, pagination,
   old PRs with recent feedback, and the existing end-to-end controlled fixture.
@@ -177,3 +177,27 @@ directory transfers were not performed; those paths were checked with SDK double
 The virtual environment includes both SDK async provider extras and pip check
 passes. Source SDK commit remains 550ba3babfaefe68aaaa340f59bbfda77d123398, clean
 and unmodified. Resolved third-party requirements are recorded in requirements.txt.
+
+## Four separate SDK operation commands
+
+Thirteen regression cases exercise independent single-file and directory uploads
+and downloads for AWS/GCP, exact SDK call boundaries, upload-only default behavior,
+missing manifests, content corruption, refused prompts, failed-upload manifest
+preservation, wrong-bucket downloads and malicious manifest paths. Existing save
+round-trip tests explicitly select the advanced save workflow.
+
+Four actual GCP commands were run separately with --yes against pr-review-content:
+
+- upload: 1 Markdown file, 6,883 bytes; SDK upload 0.755 s.
+- download: 1 file saved and SHA-256 verified; SDK download 0.582 s.
+- upload-directory: 3 files, 1,448 bytes; SDK directory upload 2.147 s, zero failures.
+- download-directory: 3 files restored and checksum verified; SDK directory
+  download 2.459 s, zero failures.
+
+Single key: demo_artifacts/demo%2Fhuman-review-learning/b056662e09b54e63b443aa2ecf48756d/review_knowledge.demo.md.
+Directory prefix: demo_artifacts/demo%2Fhuman-review-learning/9c734e3214db497680725eb578394f9c/.
+
+Complete logs are local and ignored under
+output/demo--human-review-learning/preview/{single-upload,single-download,directory-upload,directory-download}.log.
+These uploads/downloads were actual SDK calls, distinct from the mocked regression
+checks. No AWS calls or deletion were performed for this validation.
