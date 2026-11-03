@@ -85,6 +85,39 @@ Each download checks the manifest's operation type, provider, repository and
 configured bucket. Fresh destination folders avoid stale local files hiding an
 incomplete transfer. These commands do not perform cleanup or deletion.
 
+## Find the uploaded files in the cloud console
+
+Before each directory transfer, the log prints `DIRECTORY LOCATION` with:
+
+- `Bucket`: the configured bucket, such as `pr-review-content`.
+- `Cloud directory`: the full `s3://` or `gs://` URI.
+- `Prefix (search)`: the exact object prefix to copy into the console search field.
+- `Local directory`: the absolute upload snapshot or download destination.
+- `Console URL`: a link directly to that bucket and prefix in AWS or GCP.
+
+Open the console URL while signed into an account with access to the bucket.
+The prefix contains a unique run ID, so each run has its own folder. Copy the
+prefix exactly: a literal `%2F` in an object name is not a directory separator.
+The console URL already handles the necessary URL encoding.
+
+After a successful upload, `UPLOADED FILE` lists every relative filename,
+full object key, cloud URI and local source path. After a successful download
+and checksum verification, `DOWNLOADED FILE` lists the same cloud locations
+and each local destination. Partial transfers do not print per-file success
+messages. The SDK summary still reports successful and failed transfer counts.
+
+Illustrative AWS file entry (the run ID varies):
+
+```text
+[UPLOADED FILE] reviews/comments.json
+  Object key     : demo_artifacts/demo%2Fhuman-review-learning/<run-id>/reviews/comments.json
+  Cloud file     : s3://pr-review-content/demo_artifacts/demo%2Fhuman-review-learning/<run-id>/reviews/comments.json
+  Local file     : <absolute-upload-snapshot>/reviews/comments.json
+```
+
+The same command with `--provider gcp` prints `gs://` paths and a Google Cloud
+console URL. These are ordinary console links; they contain no signed credentials.
+
 ## Live GCP results from the separate commands
 
 ```text

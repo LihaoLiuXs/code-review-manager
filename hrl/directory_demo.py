@@ -7,6 +7,7 @@ from uuid import uuid4
 import shutil
 
 from hrl.console import DemoStopped, banner, event, size, step
+from hrl.cloud_locations import log_directory_location, log_directory_files
 from hrl.multicloud_store import MAX_BYTES, client_options
 
 
@@ -82,6 +83,7 @@ async def run(args, config):
         client = connect(args.provider,config)
         event('Demo','CONFIGURATION','📋 Directory destination',fields=(
             f'Provider       : {args.provider}',f'Bucket         : {client.bucket}',f'Prefix         : {prefix}'))
+        log_directory_location(args.provider,client.bucket,prefix,snapshot,direction='upload')
         event('BlobStore','WRITE','Uploading folder through AsyncBucketClient.upload_directory()')
         transfer_started = perf_counter()
         result = await client.upload_directory(str(snapshot),prefix=prefix,
@@ -89,9 +91,11 @@ async def run(args, config):
         check_transfer(result,count,byte_count,'upload')
         event('BlobStore','WRITE OK','Review directory uploaded successfully.',fields=(
             f'Files uploaded : {count}/{count}',f'Elapsed        : {perf_counter()-transfer_started:.3f} s'))
+        log_directory_files(args.provider,client.bucket,prefix,expected,snapshot,direction='upload')
         advance(3,'Download the review bundle into a fresh local directory','DOWNLOAD REVIEW DIRECTORY',
                 'The upload remains in the bucket and is not verified.')
         restored.mkdir(parents=True,exist_ok=False)
+        log_directory_location(args.provider,client.bucket,prefix,restored,direction='download')
         event('BlobStore','READ','Downloading folder through AsyncBucketClient.download_directory()')
         transfer_started = perf_counter()
         result = await client.download_directory(prefix,str(restored))
@@ -108,6 +112,7 @@ async def run(args, config):
                 raise ValueError(f'Downloaded review file content mismatch: {name}')
             event('BlobStore','VERIFIED',f'{name} — content and relative path match',fields=(
                 f'SHA-256        : {expected[name]}',))
+        log_directory_files(args.provider,client.bucket,prefix,expected,restored,direction='download')
         if args.cleanup:
             advance(5,'Delete only this demo run from the cloud bucket','CLEAN UP DEMO DIRECTORY',
                     'Cleanup did not start. The verified review bundle remains in the bucket.')

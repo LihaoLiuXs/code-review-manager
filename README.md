@@ -93,6 +93,11 @@ the corresponding upload before downloading, or supply its saved manifest with
 file sizes and checksums, preventing accidental cross-bucket verification.
 Neither demo upload replaces the learning workflow's existing knowledge record.
 
+Directory logs print the bucket, exact cloud prefix, full `s3://` or `gs://`
+directory URI and a console URL. Every successfully transferred file includes
+its object key, cloud URI and local path so you can locate it during the demo.
+Download file messages appear after content verification succeeds.
+
 The samples are explicitly synthetic and contain no real PR data or confirmed
 human feedback. See the [demo runbook](docs/DEMO.md) and
 [directory demo guide](docs/DIRECTORY_DEMO.md).

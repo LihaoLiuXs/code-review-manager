@@ -25,6 +25,7 @@ human-review-learning/
 │   ├── __init__.py
 │   ├── classification.py
 │   ├── cli.py
+│   ├── cloud_locations.py
 │   ├── console.py
 │   ├── demo_operations.py
 │   ├── directory_demo.py
@@ -42,6 +43,7 @@ human-review-learning/
 ├── tests/
 │   ├── test_full_demo.py
 │   ├── test_separate_demo_operations.py
+│   ├── test_directory_location_logs.py
 │   ├── test_directory_demo.py
 │   ├── test_demo_command.py
 │   ├── test_interactive_demo.py

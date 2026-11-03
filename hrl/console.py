@@ -14,7 +14,7 @@ def event(component, action, message, *, fields=(), level='INFO', show_section=T
         print('\n' + title.center(80, '━'), flush=True)
     if level == 'ERROR':
         icon = '❌ '
-    elif action in ('WRITE OK', 'READ OK', 'VERIFIED', 'PROCESS COMPLETE'):
+    elif action in ('WRITE OK', 'READ OK', 'VERIFIED', 'PROCESS COMPLETE', 'UPLOADED FILE', 'DOWNLOADED FILE'):
         icon = '✅ '
     elif action in ('READ', 'WRITE', 'READ-BACK START'):
         icon = '🔄 '

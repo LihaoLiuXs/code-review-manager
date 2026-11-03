@@ -7,6 +7,7 @@ from uuid import uuid4
 import shutil
 
 from hrl.console import banner, event, size, step
+from hrl.cloud_locations import log_directory_location, log_directory_files
 from hrl.directory_demo import connect as connect_directory, inventory, check_transfer
 from hrl.io import read_json, write_json
 from hrl.multicloud_store import MAX_BYTES, client_options
@@ -117,6 +118,9 @@ async def run(args, config, *, number=1, total=1):
         location = state['prefix' if is_directory else 'key']
         event('Demo','CONFIGURATION','📋 Cloud destination',fields=(
             f'Bucket         : {client.bucket}',f'Object / prefix: {location}'))
+        if is_directory:
+            log_directory_location(args.provider,client.bucket,state['prefix'],
+                snapshot if uploading else restored,direction='upload' if uploading else 'download')
         transfer_started = perf_counter()
         if uploading:
             if is_directory:
@@ -130,6 +134,8 @@ async def run(args, config, *, number=1, total=1):
             event('BlobStore','WRITE OK','Upload confirmed by multicloud-py.',fields=(
                 f'Files uploaded : {count}/{count}',f'Bytes uploaded : {size(byte_count)}',
                 f'Elapsed        : {perf_counter()-transfer_started:.3f} s'))
+            if is_directory:
+                log_directory_files(args.provider,client.bucket,state['prefix'],expected,snapshot,direction='upload')
             state['bucket'] = client.bucket
             write_json(work/'manifest.json',state)
             write_json(latest,state)
@@ -151,6 +157,8 @@ async def run(args, config, *, number=1, total=1):
                 f'Files downloaded: {count}/{count}',f'Saved to       : {restored.absolute()}',
                 f'Elapsed        : {perf_counter()-transfer_started:.3f} s'))
             verify_download(restored,expected)
+            if is_directory:
+                log_directory_files(args.provider,client.bucket,state['prefix'],expected,restored,direction='download')
             event('Demo','RESULT','Downloaded content matches the upload manifest.',fields=(f'Files verified : {count}/{count}',))
         event('Demo','PROCESS COMPLETE',f'{title} completed.',fields=(f'Elapsed        : {perf_counter()-started:.3f} s',))
         banner(f'{title} COMPLETED',f'Files: {count}/{count}')

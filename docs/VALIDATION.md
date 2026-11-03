@@ -10,7 +10,7 @@ Private remote: https://git.soma.salesforce.com/chameleon/human-review-learning
   isolated environment. Replaced database operations with BucketClient uploads,
   downloads and bucket existence checks. SDK sources remain untouched. Obsolete DocStore distributions and
   google-cloud-firestore were uninstalled before the passing test run.
-- `.venv/bin/python -m pytest -q`: **147 passed** including separate SDK operations, native directory transfers and presenter controls.
+- `.venv/bin/python -m pytest -q`: **153 passed** including separate SDK operations, native directory transfers and presenter controls.
 - Tests include conservative classification, evidence validation, semantic merge
   orchestration, stable IDs, preservation, duplicate source prevention, pagination,
   old PRs with recent feedback, and the existing end-to-end controlled fixture.
@@ -218,3 +218,23 @@ and three-file downloads against their own upload manifests, and printed 4/4
 operations completed. Total elapsed time was 7.805 s. The local ignored preview is
 output/demo--human-review-learning/preview/full-demo.md. No AWS operations or
 deletes were performed for this follow-up.
+
+## Directory location logging
+
+Six regression cases cover AWS and GCP directory upload/download location logs,
+full nested object keys, cloud URIs, absolute local paths, console URL encoding
+(including literal percent signs and spaces), and suppression of per-file success
+messages after partial transfers. Download success entries follow full checksum
+verification. The complete suite passes 153 tests; pip check reports no broken
+requirements. These formatting checks use SDK doubles.
+
+A live GCP full demo with the new logs completed all four operations in 8.048 s.
+The directory upload transferred 3/3 files (1,448 bytes) in 2.366 s; the download
+transferred and checksum verified 3/3 files in 2.180 s. Both stages printed the
+bucket, cloud directory, console URL and all three nested object/local paths.
+The uploaded prefix is
+`demo_artifacts/demo%2Fhuman-review-learning/557363e770144b9d9f9b1ff4de82d9af/`.
+The actual local capture is
+`output/demo--human-review-learning/preview/full-demo-locations-gcp.log`
+(with a Markdown preview alongside it). No AWS live calls or deletion were
+performed for this logging update; AWS formatting is covered by the tests.

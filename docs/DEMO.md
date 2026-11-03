@@ -128,3 +128,12 @@ preserve local artifacts and suppress successful completion banners.
 
 The existing skill and explicit storage save/sync workflows retain their
 preflight/merge/read-back behavior. They are distinct from these four SDK demos.
+
+## Locate directory files during the presentation
+
+For both directory stages, use the printed `Console URL` to open the bucket at
+that run's prefix. `Cloud directory` and `Prefix (search)` show the exact remote
+folder. Each `UPLOADED FILE` or verified `DOWNLOADED FILE` entry includes its
+object key, cloud URI and absolute local path. See the
+[directory guide](DIRECTORY_DEMO.md#find-the-uploaded-files-in-the-cloud-console)
+for an example and console navigation details.
