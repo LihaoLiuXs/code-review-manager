@@ -12,14 +12,16 @@ from time import perf_counter
 from urllib.parse import quote
 from uuid import uuid4
 
-# multicloud-py Blob storage is all we need; no cloud-provider-specific imports are needed.
-from multicloud.blob.blob_client import BucketClient
 
 from hrl.cloud_locations import log_directory_files, log_directory_location
 from hrl.console import banner, event, size, step
 from hrl.directory_demo import check_transfer, connect as connect_directory, inventory
 from hrl.io import read_json, write_json
 from hrl.multicloud_store import MAX_BYTES, client_options
+
+
+# multicloud-py Blob storage is all we need; no cloud-provider-specific imports are needed.
+from multicloud.blob.blob_client import BucketClient
 
 
 def connect_file(provider, config):
