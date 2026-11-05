@@ -41,12 +41,17 @@ def test_single_upload_and_download_are_two_independent_commands(file_demo, monk
     output=capsys.readouterr().out
     assert 'SINGLE FILE UPLOAD COMPLETED' in output
     assert 'SINGLE FILE DOWNLOAD' not in output
+    uploaded_key=client.upload.call_args.kwargs['key']
+    folder=Path(uploaded_key).parent.name
+    assert folder.endswith('-upload')
+    from uuid import UUID
+    assert UUID(folder.removesuffix('-upload')).version==4
     uploaded=client.upload.call_args.kwargs['payload']
     assert uploaded==sample.read_bytes()
     sample.write_text('Changed after upload; download must use the saved manifest')
     assert run(monkeypatch,'download',provider)==0
     client.upload.assert_called_once()
-    client.download.assert_called_once()
+    client.download.assert_called_once_with(key=uploaded_key)
     output=capsys.readouterr().out
     assert 'SINGLE FILE DOWNLOAD COMPLETED' in output
     saved=list(Path('output').rglob('downloaded/review_knowledge.demo.md'))
@@ -63,10 +68,16 @@ def test_directory_upload_and_download_are_independent_commands(bundle_demo, mon
     assert run(monkeypatch,'upload-directory',provider)==0
     client.upload_directory.assert_awaited_once()
     client.download_directory.assert_not_awaited()
+    prefix=client.upload_directory.call_args.kwargs['prefix']
+    folder=Path(prefix).name
+    assert folder.endswith('-directory-upload')
+    from uuid import UUID
+    assert UUID(folder.removesuffix('-directory-upload')).version==4
     assert 'DIRECTORY UPLOAD COMPLETED' in capsys.readouterr().out
     assert run(monkeypatch,'download-directory',provider)==0
     client.upload_directory.assert_awaited_once()
     client.download_directory.assert_awaited_once()
+    assert client.download_directory.call_args.args[0]==prefix
     client.delete_directory.assert_not_awaited()
     output=capsys.readouterr().out
     assert 'Files verified : 3/3' in output

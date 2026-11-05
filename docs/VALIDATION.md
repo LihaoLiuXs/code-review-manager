@@ -238,3 +238,11 @@ The actual local capture is
 `output/demo--human-review-learning/preview/full-demo-locations-gcp.log`
 (with a Markdown preview alongside it). No AWS live calls or deletion were
 performed for this logging update; AWS formatting is covered by the tests.
+
+## Operation labels in cloud folder names
+
+Existing single-file and directory round-trip cases now check that AWS and GCP
+upload folders retain a UUID and end in `-upload/` or `-directory-upload/`, and
+that downloads reuse the exact upload key/prefix. The legacy directory round-trip
+also uses `-directory-upload/`. These checks use SDK doubles; existing live
+captures above keep their historical UUID-only names.

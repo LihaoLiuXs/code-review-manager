@@ -79,7 +79,8 @@ async def run(args, config, *, number=1, total=1):
             (snapshot/source.name).write_bytes(payload)
             files = {source.name:snapshot/source.name}
         expected = describe(files)
-        prefix = f'demo_artifacts/{quote(args.repo,safe="")}/{run_id}/'
+        operation = 'directory-upload' if is_directory else 'upload'
+        prefix = f'demo_artifacts/{quote(args.repo,safe="")}/{run_id}-{operation}/'
         state = dict(kind=kind,provider=args.provider,repo=args.repo,files=expected)
         state['prefix' if is_directory else 'key'] = prefix if is_directory else prefix+source.name
         event('Demo','INPUT',str(source),fields=tuple(f'File           : {name}' for name in expected))

@@ -96,7 +96,8 @@ Before each directory transfer, the log prints `DIRECTORY LOCATION` with:
 - `Console URL`: a link directly to that bucket and prefix in AWS or GCP.
 
 Open the console URL while signed into an account with access to the bucket.
-The prefix contains a unique run ID, so each run has its own folder. Copy the
+The prefix ends with `<UUID>-directory-upload/`, so each run has its own clearly
+labeled folder. Downloads reuse that exact upload prefix. Copy the
 prefix exactly: a literal `%2F` in an object name is not a directory separator.
 The console URL already handles the necessary URL encoding.
 
@@ -110,8 +111,8 @@ Illustrative AWS file entry (the run ID varies):
 
 ```text
 [UPLOADED FILE] reviews/comments.json
-  Object key     : demo_artifacts/demo%2Fhuman-review-learning/<run-id>/reviews/comments.json
-  Cloud file     : s3://pr-review-content/demo_artifacts/demo%2Fhuman-review-learning/<run-id>/reviews/comments.json
+  Object key     : demo_artifacts/demo%2Fhuman-review-learning/<run-id>-directory-upload/reviews/comments.json
+  Cloud file     : s3://pr-review-content/demo_artifacts/demo%2Fhuman-review-learning/<run-id>-directory-upload/reviews/comments.json
   Local file     : <absolute-upload-snapshot>/reviews/comments.json
 ```
 

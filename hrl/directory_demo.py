@@ -72,7 +72,7 @@ async def run(args, config):
     expected = {name:sha256(path.read_bytes()).hexdigest() for name,path in inventory(snapshot).items()}
     byte_count = sum(path.stat().st_size for path in inventory(snapshot).values())
     count = len(expected)
-    prefix = f'review_bundles/{quote(args.repo,safe="")}/{run_id}/'
+    prefix = f'review_bundles/{quote(args.repo,safe="")}/{run_id}-directory-upload/'
     event('Demo', 'BUNDLE READY', 'Review guidance, structured rules and source context stay together.', fields=(
         f'Files planned  : {count}', f'Total content  : {size(byte_count)}',
         f'Cloud prefix   : {prefix}', f'Download folder: {restored.absolute()}',

@@ -66,6 +66,8 @@ def test_native_directory_roundtrip_preserves_nested_review_bundle(bundle_demo, 
     assert selected == [provider]
     prefix = client.upload_directory.call_args.kwargs['prefix']
     assert prefix.startswith('review_bundles/demo%2Fhuman-review-learning/') and prefix.endswith('/')
+    assert Path(prefix).name.endswith('-directory-upload')
+    assert client.download_directory.call_args.args[0]==prefix
     expected = {p.relative_to(source).as_posix():p.read_bytes() for p in source.rglob('*') if p.is_file()}
     assert {k[len(prefix):]:v for k,v in blobs.items()} == expected
     restored = Path(client.download_directory.call_args.args[1])

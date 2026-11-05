@@ -117,7 +117,12 @@ to another reviewer or CI environment if it needs to restore the same upload.
 No credentials are stored in the manifest.
 
 Cloud artifacts use fresh prefixes:
-`demo_artifacts/<percent-encoded-repository>/<generated-UUID>/`.
+
+- Single file: `demo_artifacts/<percent-encoded-repository>/<UUID>-upload/`.
+- Directory: `demo_artifacts/<percent-encoded-repository>/<UUID>-directory-upload/`.
+
+Downloads reuse the uploaded folder recorded in the manifest. Older manifests
+with UUID-only folder names remain usable.
 The single-file demo stores actual Markdown bytes; the learning workflow's
 separate JSON knowledge record is unchanged. Directory uploads preserve nested
 paths. All snapshots, downloads and manifests are ignored by Git.

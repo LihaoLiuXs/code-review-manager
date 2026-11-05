@@ -93,6 +93,10 @@ the corresponding upload before downloading, or supply its saved manifest with
 file sizes and checksums, preventing accidental cross-bucket verification.
 Neither demo upload replaces the learning workflow's existing knowledge record.
 
+New cloud folders are named `<UUID>-upload/` for single-file uploads and
+`<UUID>-directory-upload/` for directory uploads. Downloads read from the exact
+folder recorded by their upload manifest, including older folders without suffixes.
+
 Directory logs print the bucket, exact cloud prefix, full `s3://` or `gs://`
 directory URI and a console URL. Every successfully transferred file includes
 its object key, cloud URI and local path so you can locate it during the demo.
