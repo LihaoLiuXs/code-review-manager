@@ -1,171 +1,319 @@
-"""Independent single-file and directory transfers through multicloud-py."""
+"""Demo one application using multicloud-py on AWS or GCP.
+
+The provider tag selects the cloud. The same SDK clients and transfer methods
+handle single-file and directory uploads and downloads on either provider.
+"""
+
+import shutil
+from argparse import Namespace
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 from time import perf_counter
 from urllib.parse import quote
 from uuid import uuid4
-import shutil
 
+# Blob storage comes from multicloud-py; no cloud-provider-specific imports are needed.
+from multicloud.blob.blob_client import BucketClient
+
+from hrl.cloud_locations import log_directory_files, log_directory_location
 from hrl.console import banner, event, size, step
-from hrl.cloud_locations import log_directory_location, log_directory_files
-from hrl.directory_demo import connect as connect_directory, inventory, check_transfer
+from hrl.directory_demo import check_transfer, connect as connect_directory, inventory
 from hrl.io import read_json, write_json
 from hrl.multicloud_store import MAX_BYTES, client_options
 
 
 def connect_file(provider, config):
-    from multicloud.blob.blob_client import BucketClient
+    """Select the cloud with just the provider tag: "aws" or "gcp".
+
+    The same BucketClient and upload/download code serve both clouds. The bucket
+    and optional region come from config; credentials follow SDK authentication.
+    """
     return BucketClient(**client_options(provider, config))
 
 
 def describe(files):
-    return {name: {'bytes': path.stat().st_size, 'sha256': sha256(path.read_bytes()).hexdigest()}
-            for name,path in files.items()}
+    """Record file sizes and checksums for download verification."""
+    return {
+        name: {"bytes": path.stat().st_size, "sha256": sha256(path.read_bytes()).hexdigest()}
+        for name, path in files.items()
+    }
 
 
 def verify_download(directory, expected):
+    """Verify the downloaded file set, sizes and checksums against the upload."""
     actual = inventory(directory)
     if set(actual) != set(expected):
-        raise ValueError('Downloaded file set differs from the upload manifest')
-    for name,path in actual.items():
+        raise ValueError("Downloaded file set differs from the upload manifest")
+    for name, path in actual.items():
         value = expected[name]
         content = path.read_bytes()
-        if len(content) != value['bytes'] or sha256(content).hexdigest() != value['sha256']:
-            raise ValueError(f'Download content mismatch: {name}')
-        event('BlobStore','VERIFIED',f'{name} — content and relative path match',fields=(
-            f'SHA-256        : {value["sha256"]}',))
+        if len(content) != value["bytes"] or sha256(content).hexdigest() != value["sha256"]:
+            raise ValueError(f"Download content mismatch: {name}")
+        event(
+            "BlobStore",
+            "VERIFIED",
+            f"{name} — content and relative path match",
+            fields=(f'SHA-256        : {value["sha256"]}',),
+        )
 
 
 async def run(args, config, *, number=1, total=1):
+    """Run one SDK transfer, with a presenter prompt and a logged result."""
     if not args.provider or args.providers:
-        raise ValueError('Select one --provider aws or --provider gcp')
+        raise ValueError("Select one --provider aws or --provider gcp")
     if args.cleanup:
-        raise ValueError('Separate transfer operations do not perform cleanup')
-    is_directory = args.action.endswith('-directory')
-    uploading = args.action.startswith('upload')
-    kind = 'directory' if is_directory else 'single'
-    title = ('DIRECTORY ' if is_directory else 'SINGLE FILE ') + ('UPLOAD' if uploading else 'DOWNLOAD')
-    banner('Code Review Manager — multicloud-py Demo',title)
-    event('Demo','PROCESS START',f'One operation: {title}',fields=(
-        f'Provider       : {args.provider}',f'Repository     : {args.repo}'))
-    step(number,f'{title} through multicloud-py',interactive=args.interactive,total=total,
-         section=title,stop_detail='This operation did not start.')
+        raise ValueError("Separate transfer operations do not perform cleanup")
+    is_directory = args.action.endswith("-directory")
+    uploading = args.action.startswith("upload")
+    kind = "directory" if is_directory else "single"
+    title = ("DIRECTORY " if is_directory else "SINGLE FILE ") + (
+        "UPLOAD" if uploading else "DOWNLOAD"
+    )
+    banner("Code Review Manager — multicloud-py Demo", title)
+    event(
+        "Demo",
+        "PROCESS START",
+        f"One operation: {title}",
+        fields=(f"Provider       : {args.provider}", f"Repository     : {args.repo}"),
+    )
+    step(
+        number,
+        f"{title} through multicloud-py",
+        interactive=args.interactive,
+        total=total,
+        section=title,
+        stop_detail="This operation did not start.",
+    )
     started = perf_counter()
-    root = Path('output') / args.repo.replace('/','--') / 'demo' / args.provider
-    latest = root / f'{kind}-latest.json'
+    root = Path("output") / args.repo.replace("/", "--") / "demo" / args.provider
+    latest = root / f"{kind}-latest.json"
     run_id = uuid4().hex
     work = root / run_id
-    restored = work / 'downloaded'
+    restored = work / "downloaded"
+    # Prepare upload content, or load the manifest for an earlier upload.
     if uploading:
         if args.state:
-            raise ValueError('--state selects an existing upload for a download command')
+            raise ValueError("--state selects an existing upload for a download command")
         if is_directory:
             source = Path(args.directory).absolute()
             inventory(source)
-            snapshot = work / 'source'
-            shutil.copytree(source,snapshot)
+            snapshot = work / "source"
+            shutil.copytree(source, snapshot)
             files = inventory(snapshot)
         else:
             if not args.file:
-                raise ValueError('upload requires --file')
+                raise ValueError("upload requires --file")
             source = Path(args.file).absolute()
             if source.is_symlink() or not source.is_file() or source.stat().st_size > MAX_BYTES:
-                raise ValueError('Select a regular Markdown file of at most 10 MiB')
+                raise ValueError("Select a regular Markdown file of at most 10 MiB")
             payload = source.read_bytes()
             if len(payload) > MAX_BYTES:
-                raise ValueError('File exceeds the 10 MiB demo guard')
-            snapshot = work / 'source'
+                raise ValueError("File exceeds the 10 MiB demo guard")
+            snapshot = work / "source"
             snapshot.mkdir(parents=True)
-            (snapshot/source.name).write_bytes(payload)
-            files = {source.name:snapshot/source.name}
+            (snapshot / source.name).write_bytes(payload)
+            files = {source.name: snapshot / source.name}
         expected = describe(files)
-        operation = 'directory-upload' if is_directory else 'upload'
+        operation = "directory-upload" if is_directory else "upload"
         prefix = f'demo_artifacts/{quote(args.repo,safe="")}/{run_id}-{operation}/'
-        state = dict(kind=kind,provider=args.provider,repo=args.repo,files=expected)
-        state['prefix' if is_directory else 'key'] = prefix if is_directory else prefix+source.name
-        event('Demo','INPUT',str(source),fields=tuple(f'File           : {name}' for name in expected))
+        state = dict(kind=kind, provider=args.provider, repo=args.repo, files=expected)
+        state["prefix" if is_directory else "key"] = (
+            prefix if is_directory else prefix + source.name
+        )
+        event(
+            "Demo",
+            "INPUT",
+            str(source),
+            fields=tuple(f"File           : {name}" for name in expected),
+        )
     else:
         state_path = Path(args.state) if args.state else latest
         state = read_json(state_path)
         if not state:
-            command = 'upload-directory' if is_directory else 'upload'
-            raise ValueError(f'No upload manifest; run ./demo {command} --provider {args.provider} first, or pass --state')
-        if state.get('kind') != kind or state.get('provider') != args.provider or state.get('repo') != args.repo:
-            raise ValueError('Upload manifest does not match the operation, provider and repository')
-        expected = state.get('files')
-        if not isinstance(expected,dict) or not expected:
-            raise ValueError('Upload manifest has no files')
+            command = "upload-directory" if is_directory else "upload"
+            raise ValueError(
+                f"No upload manifest; run ./demo {command} --provider {args.provider} first, or pass --state"
+            )
+        if (
+            state.get("kind") != kind
+            or state.get("provider") != args.provider
+            or state.get("repo") != args.repo
+        ):
+            raise ValueError(
+                "Upload manifest does not match the operation, provider and repository"
+            )
+        expected = state.get("files")
+        if not isinstance(expected, dict) or not expected:
+            raise ValueError("Upload manifest has no files")
         for name, metadata in expected.items():
             relative = PurePosixPath(name)
-            if (relative.is_absolute() or '..' in relative.parts or not relative.parts
-                    or '\\' in name or not isinstance(metadata,dict)
-                    or type(metadata.get('bytes')) is not int or metadata['bytes'] < 0
-                    or not isinstance(metadata.get('sha256'),str)):
-                raise ValueError('Invalid upload manifest file metadata')
-        if not is_directory and (len(expected)!=1 or len(PurePosixPath(next(iter(expected))).parts)!=1):
-            raise ValueError('Single-file manifest must name one file')
-        if not isinstance(state.get('prefix' if is_directory else 'key'),str):
-            raise ValueError('Upload manifest has no cloud location')
-        event('Demo','INPUT','Using the manifest from a separate upload.',fields=(f'State file     : {state_path.absolute()}',))
+            if (
+                relative.is_absolute()
+                or ".." in relative.parts
+                or not relative.parts
+                or "\\" in name
+                or not isinstance(metadata, dict)
+                or type(metadata.get("bytes")) is not int
+                or metadata["bytes"] < 0
+                or not isinstance(metadata.get("sha256"), str)
+            ):
+                raise ValueError("Invalid upload manifest file metadata")
+        if not is_directory and (
+            len(expected) != 1 or len(PurePosixPath(next(iter(expected))).parts) != 1
+        ):
+            raise ValueError("Single-file manifest must name one file")
+        if not isinstance(state.get("prefix" if is_directory else "key"), str):
+            raise ValueError("Upload manifest has no cloud location")
+        event(
+            "Demo",
+            "INPUT",
+            "Using the manifest from a separate upload.",
+            fields=(f"State file     : {state_path.absolute()}",),
+        )
     count = len(expected)
-    byte_count = sum(value['bytes'] for value in expected.values())
+    byte_count = sum(value["bytes"] for value in expected.values())
     if byte_count > MAX_BYTES:
-        raise ValueError('Upload manifest exceeds the 10 MiB demo guard')
+        raise ValueError("Upload manifest exceeds the 10 MiB demo guard")
     client = None
     try:
-        client = connect_directory(args.provider,config) if is_directory else connect_file(args.provider,config)
-        if not uploading and state.get('bucket') != client.bucket:
-            raise ValueError('Configured bucket differs from the upload manifest')
-        location = state['prefix' if is_directory else 'key']
-        event('Demo','CONFIGURATION','📋 Cloud destination',fields=(
-            f'Bucket         : {client.bucket}',f'Object / prefix: {location}'))
+        # Only the provider tag changes between clouds; SDK calls below are shared.
+        client = (
+            connect_directory(args.provider, config)
+            if is_directory
+            else connect_file(args.provider, config)
+        )
+        if not uploading and state.get("bucket") != client.bucket:
+            raise ValueError("Configured bucket differs from the upload manifest")
+        location = state["prefix" if is_directory else "key"]
+        event(
+            "Demo",
+            "CONFIGURATION",
+            "📋 Cloud destination",
+            fields=(f"Bucket         : {client.bucket}", f"Object / prefix: {location}"),
+        )
         if is_directory:
-            log_directory_location(args.provider,client.bucket,state['prefix'],
-                snapshot if uploading else restored,direction='upload' if uploading else 'download')
+            log_directory_location(
+                args.provider,
+                client.bucket,
+                state["prefix"],
+                snapshot if uploading else restored,
+                direction="upload" if uploading else "download",
+            )
         transfer_started = perf_counter()
         if uploading:
             if is_directory:
-                event('BlobStore','WRITE','AsyncBucketClient.upload_directory() — uploading directory')
-                response = await client.upload_directory(str(snapshot),prefix=state['prefix'],
-                    include_sub_folders=True,follow_symbolic_links=False)
-                check_transfer(response,count,byte_count,'upload')
+                event(
+                    "BlobStore",
+                    "WRITE",
+                    "AsyncBucketClient.upload_directory() — uploading directory",
+                )
+                # Directory upload: preserve the complete nested review bundle.
+                response = await client.upload_directory(
+                    str(snapshot),
+                    prefix=state["prefix"],
+                    include_sub_folders=True,
+                    follow_symbolic_links=False,
+                )
+                check_transfer(response, count, byte_count, "upload")
             else:
-                event('BlobStore','WRITE','BucketClient.upload() — uploading one Markdown file')
-                client.upload(key=state['key'],payload=payload,content_type='text/markdown; charset=utf-8')
-            event('BlobStore','WRITE OK','Upload confirmed by multicloud-py.',fields=(
-                f'Files uploaded : {count}/{count}',f'Bytes uploaded : {size(byte_count)}',
-                f'Elapsed        : {perf_counter()-transfer_started:.3f} s'))
+                event("BlobStore", "WRITE", "BucketClient.upload() — uploading one Markdown file")
+                # Single-file upload: send the Markdown bytes through multicloud-py.
+                client.upload(
+                    key=state["key"], payload=payload, content_type="text/markdown; charset=utf-8"
+                )
+            event(
+                "BlobStore",
+                "WRITE OK",
+                "Upload confirmed by multicloud-py.",
+                fields=(
+                    f"Files uploaded : {count}/{count}",
+                    f"Bytes uploaded : {size(byte_count)}",
+                    f"Elapsed        : {perf_counter()-transfer_started:.3f} s",
+                ),
+            )
             if is_directory:
-                log_directory_files(args.provider,client.bucket,state['prefix'],expected,snapshot,direction='upload')
-            state['bucket'] = client.bucket
-            write_json(work/'manifest.json',state)
-            write_json(latest,state)
-            event('Demo','MANIFEST','Upload recorded for the next download stage.' if total>1 else 'Upload recorded for a separate download.',fields=(
-                f'State file     : {(work/"manifest.json").absolute()}',
-                (f'Next stage     : {number+1}/{total} — {"DIRECTORY DOWNLOAD" if is_directory else "SINGLE FILE DOWNLOAD"}' if total>1 else
-                 f'Next command   : ./demo {"download-directory" if is_directory else "download"} --provider {args.provider} --repo {args.repo}')))
+                log_directory_files(
+                    args.provider,
+                    client.bucket,
+                    state["prefix"],
+                    expected,
+                    snapshot,
+                    direction="upload",
+                )
+            state["bucket"] = client.bucket
+            write_json(work / "manifest.json", state)
+            write_json(latest, state)
+            event(
+                "Demo",
+                "MANIFEST",
+                (
+                    "Upload recorded for the next download stage."
+                    if total > 1
+                    else "Upload recorded for a separate download."
+                ),
+                fields=(
+                    f'State file     : {(work/"manifest.json").absolute()}',
+                    (
+                        f'Next stage     : {number+1}/{total} — {"DIRECTORY DOWNLOAD" if is_directory else "SINGLE FILE DOWNLOAD"}'
+                        if total > 1
+                        else f'Next command   : ./demo {"download-directory" if is_directory else "download"} --provider {args.provider} --repo {args.repo}'
+                    ),
+                ),
+            )
         else:
-            restored.mkdir(parents=True,exist_ok=False)
+            restored.mkdir(parents=True, exist_ok=False)
             if is_directory:
-                event('BlobStore','READ','AsyncBucketClient.download_directory() — downloading directory')
-                response = await client.download_directory(state['prefix'],str(restored))
-                check_transfer(response,count,byte_count,'download')
+                event(
+                    "BlobStore",
+                    "READ",
+                    "AsyncBucketClient.download_directory() — downloading directory",
+                )
+                # Directory download: restore the exact prefix recorded by the upload.
+                response = await client.download_directory(state["prefix"], str(restored))
+                check_transfer(response, count, byte_count, "download")
             else:
-                event('BlobStore','READ','BucketClient.download() — downloading one Markdown file')
-                response = client.download(key=state['key'])
-                (restored/next(iter(expected))).write_bytes(response.content)
-            event('BlobStore','READ OK','Download completed through multicloud-py.',fields=(
-                f'Files downloaded: {count}/{count}',f'Saved to       : {restored.absolute()}',
-                f'Elapsed        : {perf_counter()-transfer_started:.3f} s'))
-            verify_download(restored,expected)
+                event(
+                    "BlobStore", "READ", "BucketClient.download() — downloading one Markdown file"
+                )
+                # Single-file download: read the uploaded Markdown through the same SDK.
+                response = client.download(key=state["key"])
+                (restored / next(iter(expected))).write_bytes(response.content)
+            event(
+                "BlobStore",
+                "READ OK",
+                "Download completed through multicloud-py.",
+                fields=(
+                    f"Files downloaded: {count}/{count}",
+                    f"Saved to       : {restored.absolute()}",
+                    f"Elapsed        : {perf_counter()-transfer_started:.3f} s",
+                ),
+            )
+            verify_download(restored, expected)
             if is_directory:
-                log_directory_files(args.provider,client.bucket,state['prefix'],expected,restored,direction='download')
-            event('Demo','RESULT','Downloaded content matches the upload manifest.',fields=(f'Files verified : {count}/{count}',))
-        event('Demo','PROCESS COMPLETE',f'{title} completed.',fields=(f'Elapsed        : {perf_counter()-started:.3f} s',))
-        banner(f'{title} COMPLETED',f'Files: {count}/{count}')
-        return work/'manifest.json' if uploading else restored
+                log_directory_files(
+                    args.provider,
+                    client.bucket,
+                    state["prefix"],
+                    expected,
+                    restored,
+                    direction="download",
+                )
+            event(
+                "Demo",
+                "RESULT",
+                "Downloaded content matches the upload manifest.",
+                fields=(f"Files verified : {count}/{count}",),
+            )
+        event(
+            "Demo",
+            "PROCESS COMPLETE",
+            f"{title} completed.",
+            fields=(f"Elapsed        : {perf_counter()-started:.3f} s",),
+        )
+        banner(f"{title} COMPLETED", f"Files: {count}/{count}")
+        return work / "manifest.json" if uploading else restored
     except Exception as exc:
-        raise RuntimeError(f'{title} failed: {exc}. Local artifacts retained at {work}') from exc
+        raise RuntimeError(f"{title} failed: {exc}. Local artifacts retained at {work}") from exc
     finally:
         if client is not None:
             if is_directory:
@@ -176,27 +324,42 @@ async def run(args, config, *, number=1, total=1):
 
 async def run_all(args, config):
     """Run four distinct demo stages, each using its corresponding upload manifest."""
-    from argparse import Namespace
     if args.state:
-        raise ValueError('--state is for individual downloads; the full demo uses its own new uploads')
+        raise ValueError(
+            "--state is for individual downloads; the full demo uses its own new uploads"
+        )
     if args.cleanup:
-        raise ValueError('The full SDK demo does not perform cleanup')
-    banner('Code Review Manager — Full multicloud-py Demo',
-           'Single upload → Single download → Directory upload → Directory download')
+        raise ValueError("The full SDK demo does not perform cleanup")
+    banner(
+        "Code Review Manager — Full multicloud-py Demo",
+        "Single upload → Single download → Directory upload → Directory download",
+    )
     started = perf_counter()
     manifests = {}
-    for number,action in enumerate(('upload','download','upload-directory','download-directory'),1):
-        options = Namespace(**{**vars(args), 'action': action})
-        if action in ('download','download-directory'):
-            options.state = str(manifests['upload-directory' if action=='download-directory' else 'upload'])
-        result = await run(options,config,number=number,total=4)
-        if action.startswith('upload'):
+    for number, action in enumerate(
+        ("upload", "download", "upload-directory", "download-directory"), 1
+    ):
+        options = Namespace(**{**vars(args), "action": action})
+        if action in ("download", "download-directory"):
+            options.state = str(
+                manifests["upload-directory" if action == "download-directory" else "upload"]
+            )
+        result = await run(options, config, number=number, total=4)
+        if action.startswith("upload"):
             manifests[action] = result
-    single_count = len(read_json(manifests['upload'])['files'])
-    directory_count = len(read_json(manifests['upload-directory'])['files'])
-    event('Demo','FULL DEMO COMPLETE','All four SDK operations completed successfully.',fields=(
-        'Operations     : 4/4',
-        f'Single file    : {single_count} uploaded, {single_count} downloaded, {single_count} verified',
-        f'Directory files: {directory_count} uploaded, {directory_count} downloaded, {directory_count} verified',
-        f'Elapsed        : {perf_counter()-started:.3f} s'))
-    banner('FULL SDK DEMO COMPLETED','Four operations • Downloads verified against their own uploads')
+    single_count = len(read_json(manifests["upload"])["files"])
+    directory_count = len(read_json(manifests["upload-directory"])["files"])
+    event(
+        "Demo",
+        "FULL DEMO COMPLETE",
+        "All four SDK operations completed successfully.",
+        fields=(
+            "Operations     : 4/4",
+            f"Single file    : {single_count} uploaded, {single_count} downloaded, {single_count} verified",
+            f"Directory files: {directory_count} uploaded, {directory_count} downloaded, {directory_count} verified",
+            f"Elapsed        : {perf_counter()-started:.3f} s",
+        ),
+    )
+    banner(
+        "FULL SDK DEMO COMPLETED", "Four operations • Downloads verified against their own uploads"
+    )
