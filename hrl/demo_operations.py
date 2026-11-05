@@ -12,7 +12,7 @@ from time import perf_counter
 from urllib.parse import quote
 from uuid import uuid4
 
-# Blob storage comes from multicloud-py; no cloud-provider-specific imports are needed.
+# multicloud-py Blob storage is all we need; no cloud-provider-specific imports are needed.
 from multicloud.blob.blob_client import BucketClient
 
 from hrl.cloud_locations import log_directory_files, log_directory_location
